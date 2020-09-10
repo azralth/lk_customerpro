@@ -20,7 +20,6 @@ class Lk_CustomerPro extends Module
     private $LkCustomerProSettings;
     private $LkCustomerProCmsPagesId = array();
     private $LkIdGroup;
-    private $type_customer;
 
     public function __construct()
     {
@@ -43,6 +42,13 @@ class Lk_CustomerPro extends Module
         $this->getConfigFormValues();
     }
 
+    /**
+     * Install module process
+     *
+     * @return bool
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
+     */
     public function install()
     {
         include dirname(__FILE__).'/sql/install.php';
@@ -56,6 +62,10 @@ class Lk_CustomerPro extends Module
             $this->disableDevice(Context::DEVICE_MOBILE);
     }
 
+    /**
+     * Uninstall module process
+     * @return bool
+     */
     public function uninstall()
     {
         include dirname(__FILE__).'/sql/uninstall.php';
@@ -127,6 +137,13 @@ class Lk_CustomerPro extends Module
         return true;
     }
 
+    /**
+     * Create default group pro
+     *
+     * @return bool
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
+     */
     protected function installGroup()
     {
         $result = DB::getInstance()->getRow('SELECT id_group FROM ' . _DB_PREFIX_ . 'group_lang WHERE name LIKE "Pro"');
@@ -185,6 +202,9 @@ class Lk_CustomerPro extends Module
 
     /**
      * Create the form that will be displayed in the configuration of your module.
+     *
+     * @return string
+     * @throws PrestaShopException
      */
     protected function renderForm()
     {
@@ -213,6 +233,7 @@ class Lk_CustomerPro extends Module
 
     /**
      * Create the structure of your form.
+     * @return array[]
      */
     protected function getConfigForm()
     {
@@ -268,11 +289,15 @@ class Lk_CustomerPro extends Module
         );
     }
 
+    /**
+     * Return config module value
+     * @return array
+     */
     protected function getConfigFormValues()
     {
         $fields = array();
         $this->LkCustomerProSettings = unserialize(Configuration::get('LK_CUSTOMER_PRO_SETTINGS'));
-        if($this->LkCustomerProSettings != false) {
+        if ($this->LkCustomerProSettings != false) {
             $fields['LkCustomerProCmsNotify_ID'] = $this->LkCustomerProSettings['LkCustomerProCmsNotify_ID'];
             $fields['LkCustomerProCmsNotActivated_ID'] = $this->LkCustomerProSettings['LkCustomerProCmsNotActivated_ID'];
             $fields['LkCustomerProEnableValidAccount'] = $this->LkCustomerProSettings['LkCustomerProEnableValidAccount'];
@@ -282,9 +307,7 @@ class Lk_CustomerPro extends Module
     }
 
     /**
-     *
      * Display list od admin ce in config module
-     *
      * @return type
      */
     public function displayList()
@@ -504,9 +527,9 @@ class Lk_CustomerPro extends Module
     public function hookActionFrontControllerSetVariables()
     {
         $is_pro = false;
-        if(isset($this->context->customer->id_default_group)) {
+        if (isset($this->context->customer->id_default_group)) {
             echo $this->context->customer->id_default_group;
-            if($this->context->customer->id_default_group == $this->LkCustomerProSettings['LkCustomerProGroup_ID']) {
+            if ($this->context->customer->id_default_group == $this->LkCustomerProSettings['LkCustomerProGroup_ID']) {
                 $is_pro = true;
             }
         };
