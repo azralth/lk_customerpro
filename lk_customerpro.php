@@ -17,9 +17,17 @@ if (!defined('_PS_VERSION_')) {
 
 class Lk_CustomerPro extends Module
 {
+    /** @var array $LkCustomerProSettings array of config value */
     private $LkCustomerProSettings;
+
+    /** @var array $LkCustomerProCmsPagesId array of config cms page id */
     private $LkCustomerProCmsPagesId = array();
+
+    /** @var int $LkIdGroup id pro group */
     private $LkIdGroup;
+
+    /** @var string Name of ModuleAdminController used for configuration */
+    const MODULE_ADMIN_CONTROLLER = 'AdminDisplayLkCustomerList';
 
     public function __construct()
     {
@@ -35,6 +43,7 @@ class Lk_CustomerPro extends Module
         ];
 
         $this->bootstrap = true;
+
         parent::__construct();
 
         $this->displayName = $this->l('Lk interactive - Lk customer Pro');
@@ -51,7 +60,7 @@ class Lk_CustomerPro extends Module
      */
     public function install()
     {
-        include dirname(__FILE__).'/sql/install.php';
+        include dirname(__FILE__) . '/sql/install.php';
         return parent::install() &&
             $this->registerHook('actionCustomerAccountAdd') &&
             $this->registerHook('actionAuthentication') &&
@@ -59,6 +68,7 @@ class Lk_CustomerPro extends Module
             $this->installCmsPage() &&
             $this->installGroup() &&
             $this->installFixtures() &&
+            $this->installTabs() &&
             $this->disableDevice(Context::DEVICE_MOBILE);
     }
 
@@ -68,9 +78,9 @@ class Lk_CustomerPro extends Module
      */
     public function uninstall()
     {
-        include dirname(__FILE__).'/sql/uninstall.php';
+        include dirname(__FILE__) . '/sql/uninstall.php';
         Configuration::deleteByName('LK_CUSTOMER_PRO_SETTINGS');
-        return parent::uninstall();
+        return parent::uninstall() && $this->uninstallTab();
     }
 
     /**
@@ -95,6 +105,54 @@ class Lk_CustomerPro extends Module
             return true;
         }
         return false;
+    }
+
+    /**
+     * Install controller admin
+     * @return bool
+     */
+    public function installTabs()
+    {
+        if (Tab::getIdFromClassName(static::MODULE_ADMIN_CONTROLLER)) {
+            return true;
+        }
+
+        $tab = new Tab();
+        $tab->class_name = static::MODULE_ADMIN_CONTROLLER;
+        $tab->module = $this->name;
+        $tab->id_parent = (int)Tab::getIdFromClassName('DEFAULT');
+        $tab->icon = 'settings_applications';
+        $languages = Language::getLanguages();
+        foreach ($languages as $lang) {
+            $tab->name[$lang['id_lang']] = $this->l('Lk Customer Pro');
+        }
+        try {
+            $tab->save();
+        } catch (Exception $e) {
+            echo $e->getMessage();
+            return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * Uninstall controller admin
+     * @return boolean
+     */
+    protected function uninstallTab()
+    {
+        $idTab = (int)Tab::getIdFromClassName(static::MODULE_ADMIN_CONTROLLER);
+        if ($idTab) {
+            $tab = new Tab($idTab);
+            try {
+                $tab->delete();
+            } catch (Exception $e) {
+                echo $e->getMessage();
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -166,16 +224,11 @@ class Lk_CustomerPro extends Module
      */
     public function getContent()
     {
-        $customerList = false;
         $displayNotification = '';
         if (((bool)Tools::isSubmit('submitLkCustomerProConf')) == true || Tools::getIsset('id_lk_customer')) {
             $displayNotification = $this->postProcess();
         }
-        $this->LkCustomerProSettings['LkCustomerProEnableValidAccount'];
-        if ($this->LkCustomerProSettings['LkCustomerProEnableValidAccount']) {
-            $customerList = $this->displayList();
-        }
-        return $displayNotification.$this->renderForm().$customerList;
+        return $displayNotification . $this->renderForm();
     }
 
     /**
@@ -307,79 +360,6 @@ class Lk_CustomerPro extends Module
     }
 
     /**
-     * Display list od admin ce in config module
-     * @return type
-     */
-    public function displayList()
-    {
-
-        $sql = "SELECT a.id_customer AS id_lk_customer, CONCAT(c.firstname,' ',c.lastname) AS `customer_name`, a.date_upd AS `date_valid`,
-                c.email AS `customer_mail`, c.date_add AS `customer_dateadd`,
-                a.active AS `active` FROM " . _DB_PREFIX_ . "lk_customer a LEFT JOIN " . _DB_PREFIX_ . "customer c ON
-                (a.`id_customer` = c.`id_customer`) ORDER BY a.active ASC, a.id_customer DESC";
-
-        $result = Db::getInstance()->ExecuteS($sql);
-
-        $this->fields_list = array(
-            'id_lk_customer' => array(
-                'title' => $this->l('Id'),
-                'width' => 40,
-                'type' => 'text',
-                'filter_key' => 'id_lk_customer',
-            ),
-            'customer_name' => array(
-                'title' => $this->l('Customer Name'),
-                'width' => 140,
-                'type' => 'text',
-                'filter_key' => 'customer_name',
-            ),
-            'customer_mail' => array(
-                'title' => $this->l('Customer Email'),
-                'width' => 80,
-                'type' => 'text',
-                'filter_key' => 'customer_mail',
-            ),
-            'customer_dateadd' => array(
-                'title' => $this->l('Sign in Date'),
-                'width' => 80,
-                'type' => 'text',
-                'filter_key' => 'customer_dateadd',
-            ),
-            'date_valid' => array(
-                'title' => $this->l('Confirmation Date'),
-                'width' => 80,
-                'type' => 'text',
-                'filter_key' => 'date_valid',
-            ),
-            'active' => array(
-                'title' => $this->l('State'),
-                'width' => 40,
-                'type' => 'bool',
-                'active' => 'status',
-                'filter_key' => 'active',
-            ),
-        );
-        $helper = new HelperList();
-
-        $helper->table = 'lk_customer';
-        // Actions to be displayed in the "Actions" column
-        $helper->actions = array();
-        $helper->no_link = true;
-        $helper->identifier = 'id_lk_customer';
-        $helper->simple_header = true;
-        $helper->shopLinkType = '';
-        $helper->show_toolbar = false;
-        $helper->title = $this->l('Admin List');
-        $helper->toolbar_btn['new'] = array();
-        $helper->token = Tools::getAdminTokenLite('AdminModules');
-        $helper->currentIndex = AdminController::$currentIndex . '&configure=' . $this->name;
-
-        $return_value = $helper->generateList($result, $this->fields_list);
-
-        return $return_value;
-    }
-
-    /**
      * Add customer to pro group if siret is not empty
      * @param type $params
      */
@@ -391,7 +371,7 @@ class Lk_CustomerPro extends Module
 
         //Check if siret is valid
         if ($siret && Validate::isSiret($siret)) {
-            array_push($groupsToAdd,3,$this->LkCustomerProSettings['LkCustomerProGroup_ID']);
+            array_push($groupsToAdd, 3, $this->LkCustomerProSettings['LkCustomerProGroup_ID']);
             $customer->cleanGroups();
             $customer->addGroups($groupsToAdd);
             $customer->id_default_group = $this->LkCustomerProSettings['LkCustomerProGroup_ID'];
@@ -403,16 +383,22 @@ class Lk_CustomerPro extends Module
                 $CustId = $params['newCustomer']->id;
                 $CustEmail = $params['newCustomer']->email;
                 $email = (string)Configuration::get('PS_SHOP_EMAIL');
+                $id_lang = $this->context->language->id;
 
                 // Insert in db
                 if ($this->addNewInvitation($CustId, $CustEmail)) {
                     $this->sendAccountCreateMail($params, $email);
                     $this->context->controller->success[] = $this->l('Registration successfully. Your account need to be activated. You will receive a confirmation soon');
-
+                    $link = new Link();
                     $params['newCustomer']->logout();
                     /* On le redirige sur la page CMS de notification */
-                    Tools::Redirect(__PS_BASE_URI__ . 'index.php?id_cms=' . (int)$this->LkCustomerProSettings['LkCustomerProCmsNotify_ID']
-                        . '&controller=cms&id_lang=' . (int)$this->context->language->id);
+                    Tools::Redirect($link->getCMSLink(
+                        (int)$this->LkCustomerProSettings['LkCustomerProCmsNotify_ID'],
+                        null,
+                        null,
+                        (int)$id_lang
+                    )
+                    );
                 }
             }
         }
@@ -478,7 +464,7 @@ class Lk_CustomerPro extends Module
     public function addNewInvitation($idcustomer, $email, $active = 0)
     {
         // Test first if user is already in db
-        $sql = 'SELECT * FROM `' . _DB_PREFIX_ . 'lk_customer` WHERE `email` = "' . (string)$email.'"';
+        $sql = 'SELECT * FROM `' . _DB_PREFIX_ . 'lk_customer` WHERE `email` = "' . (string)$email . '"';
         if (!Db::getInstance()->getRow($sql)) {
             $date = date('Y-m-d H:i:s');
             $sql = Db::getInstance()->execute('INSERT INTO `' . _DB_PREFIX_ . 'lk_customer` (`id_customer`, `email`, `date_add`, `active`)
@@ -489,7 +475,7 @@ class Lk_CustomerPro extends Module
                 'id_customer' => $idcustomer,
                 'active' => 0,
                 'date_upd' => date('Y-m-d H:i:s'),
-            ), 'email = "'.$email.'"', 1, true);
+            ), 'email = "' . $email . '"', 1, true);
             return $result;
         }
     }
@@ -512,9 +498,16 @@ class Lk_CustomerPro extends Module
                     /* Logout customer */
                     $this->context->cookie->logout();
                     /* Redirect to notification page */
-                    $this->context->language->id = (int)$id_lang;
-                    Tools::Redirect((string)__PS_BASE_URI__ . 'index.php?id_cms=' . (int)$this->LkCustomerProSettings['LkCustomerProCmsNotActivated_ID']
-                        . '&controller=cms&id_lang=' . (int)$id_lang);
+                    $link = new Link();
+                    $link->getCMSLink((int)$this->LkCustomerProSettings['LkCustomerProCmsNotActivated_ID']);
+
+                    Tools::Redirect($link->getCMSLink(
+                        (int)$this->LkCustomerProSettings['LkCustomerProCmsNotActivated_ID'],
+                        null,
+                        null,
+                        (int)$id_lang
+                    )
+                    );
                 }
             }
         }
@@ -526,13 +519,7 @@ class Lk_CustomerPro extends Module
      */
     public function hookActionFrontControllerSetVariables()
     {
-        $is_pro = false;
-        if (isset($this->context->customer->id_default_group)) {
-            echo $this->context->customer->id_default_group;
-            if ($this->context->customer->id_default_group == $this->LkCustomerProSettings['LkCustomerProGroup_ID']) {
-                $is_pro = true;
-            }
-        };
+        $is_pro = $this->context->customer->id_default_group == $this->LkCustomerProSettings['LkCustomerProGroup_ID'];
         $this->context->smarty->assign(array('isprocustomer' => $is_pro));
     }
 
@@ -555,7 +542,7 @@ class Lk_CustomerPro extends Module
         if ($result['active'] == 1) {
             $customer = $customer = new Customer($result['id_customer']);
             /* On envoi le mail d'activation de compte au client */
-            if (Mail::Send(
+            return Mail::Send(
                 (int)Configuration::get('PS_LANG_DEFAULT'),
                 'validatedaccount',
                 $this->l('Your account has been activated !'),
@@ -570,11 +557,7 @@ class Lk_CustomerPro extends Module
                 null,
                 null,
                 dirname(__FILE__) . '/mails/'
-            )
-            ) {
-                return true;
-            }
+            );
         }
-        return true;
     }
 }

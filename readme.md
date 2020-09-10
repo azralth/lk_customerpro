@@ -1,7 +1,6 @@
 # Lk Customer Pro
 This module allow you to add automatically your customer on specific "Pro" group when siret field. 
 When user create account on your shop, we check if siret is a valid number and put automatically user on Pro group.
-B2B mode need to be enable on your shop configuration.
 ## CMS/Group page configuration
 You can set text in cms page that the module will create on install. These pages are used to redirect the user if their account is not activated. A pro Group will also automatically created on module install. This is use to prevent conflict with other group.
 
