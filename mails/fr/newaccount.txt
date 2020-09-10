@@ -1,0 +1,10 @@
+[{shop_url}] 
+
+Bonjour,
+
+Un nouveau client vient de créer un compte sur votre boutique qui nécessite une validation de votre part.
+
+ADRESSE E-MAIL : {email}
+
+{shop_name} [{shop_url}]
+

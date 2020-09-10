@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+    <name>lk_customerpro</name>
+    <displayName><![CDATA[Lk interactive - Lk customer Pro]]></displayName>
+    <version><![CDATA[1.0.0]]></version>
+    <description><![CDATA[Register customer in pro group if siret is set on customer account creation]]></description>
+    <author><![CDATA[Lk Interactive]]></author>
+    <tab><![CDATA[front_office_features]]></tab>
+    <is_configurable>1</is_configurable>
+    <need_instance>0</need_instance>
+	<limited_countries></limited_countries>
+</module>

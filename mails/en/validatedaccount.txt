@@ -1,0 +1,23 @@
+
+[{shop_url}] 
+
+Hi {firstname} {lastname},
+
+Your account has been validated by the shop administrator
+
+You can now connect to the shop.
+
+Important Security Tips:
+
+* Always keep your account details safe.
+
+* Never disclose your login details to anyone.
+
+* Change your password regularly.
+
+* Should you suspect someone is using your account illegally, please
+notify us immediately.
+
+{shop_name} [{shop_url}] powered by
+PrestaShop(tm) [http://www.prestashop.com/] 
+

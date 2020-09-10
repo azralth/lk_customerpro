@@ -1,0 +1,11 @@
+
+[{shop_url}] 
+
+Hello,
+
+A new customer has just created an account on your shop which need a validation from you.
+
+E-MAIL : {email}
+
+{shop_name} [{shop_url}]
+

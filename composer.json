@@ -1,0 +1,18 @@
+{
+  "name": "lk-interactive/lk_cutsomerpro",
+  "description": "Register customer in pro group if siret is set on customer account creation",
+  "license": "MIT",
+  "type": "Prestashop module",
+  "authors": [
+    {
+      "name": "Lk interactive",
+      "email": "webmaster@lk-interactive.fr"
+    }
+  ],
+  "minimum-stability": "stable",
+  "type": "prestashop-module",
+  "require-dev": {
+    "prestashop/autoindex": "^1.0"
+  },
+  "require": {}
+}
