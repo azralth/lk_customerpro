@@ -90,18 +90,18 @@ class Lk_CustomerPro extends Module
     protected function installFixtures()
     {
         if (Configuration::get('LK_CUSTOMER_PRO_SETTINGS') === false) {
-            $this->LkCustomerProSettings['LkCustomerProCmsNotify_ID'] = $this->LkCustomerProCmsPagesId['lk-account-notify'];
-            $this->LkCustomerProSettings['LkCustomerProCmsNotActivated_ID'] = $this->LkCustomerProCmsPagesId['lk-account-disable'];;
-            $this->LkCustomerProSettings['LkCustomerProGroup_ID'] = $this->LkIdGroup;;
-            $this->LkCustomerProSettings['LkCustomerProEnableValidAccount'] = false;
+            $this->LkCustomerProSettings->LkCustomerProCmsNotify_ID = $this->LkCustomerProCmsPagesId['lk-account-notify'];
+            $this->LkCustomerProSettings->LkCustomerProCmsNotActivated_ID = $this->LkCustomerProCmsPagesId['lk-account-disable'];;
+            $this->LkCustomerProSettings->LkCustomerProGroup_ID = $this->LkIdGroup;;
+            $this->LkCustomerProSettings->LkCustomerProEnableValidAccount = false;
         } else {
-            $this->LkCustomerProSettings['LkCustomerProCmsNotify_ID'] = Tools::getValue('LkCustomerProCmsNotify_ID');
-            $this->LkCustomerProSettings['LkCustomerProCmsNotActivated_ID'] = Tools::getValue('LkCustomerProCmsNotActivated_ID');
-            $this->LkCustomerProSettings['LkCustomerProGroup_ID'] = Tools::getValue('LkCustomerProGroup_ID');
-            $this->LkCustomerProSettings['LkCustomerProEnableValidAccount'] = Tools::getValue('LkCustomerProEnableValidAccount');
+            $this->LkCustomerProSettings->LkCustomerProCmsNotify_ID = Tools::getValue('LkCustomerProCmsNotify_ID');
+            $this->LkCustomerProSettings->LkCustomerProCmsNotActivated_ID = Tools::getValue('LkCustomerProCmsNotActivated_ID');
+            $this->LkCustomerProSettings->LkCustomerProGroup_ID = Tools::getValue('LkCustomerProGroup_ID');
+            $this->LkCustomerProSettings->LkCustomerProEnableValidAccount = Tools::getValue('LkCustomerProEnableValidAccount');
         }
 
-        if (Configuration::updateValue('LK_CUSTOMER_PRO_SETTINGS', serialize($this->LkCustomerProSettings))) {
+        if (Configuration::updateValue('LK_CUSTOMER_PRO_SETTINGS', json_encode($this->LkCustomerProSettings))) {
             return true;
         }
         return false;
@@ -349,12 +349,12 @@ class Lk_CustomerPro extends Module
     protected function getConfigFormValues()
     {
         $fields = array();
-        $this->LkCustomerProSettings = unserialize(Configuration::get('LK_CUSTOMER_PRO_SETTINGS'));
+        $this->LkCustomerProSettings = json_decode(Configuration::get('LK_CUSTOMER_PRO_SETTINGS'));
         if ($this->LkCustomerProSettings != false) {
-            $fields['LkCustomerProCmsNotify_ID'] = $this->LkCustomerProSettings['LkCustomerProCmsNotify_ID'];
-            $fields['LkCustomerProCmsNotActivated_ID'] = $this->LkCustomerProSettings['LkCustomerProCmsNotActivated_ID'];
-            $fields['LkCustomerProEnableValidAccount'] = $this->LkCustomerProSettings['LkCustomerProEnableValidAccount'];
-            $fields['LkCustomerProGroup_ID'] = $this->LkCustomerProSettings['LkCustomerProGroup_ID'];
+            $fields['LkCustomerProCmsNotify_ID'] = $this->LkCustomerProSettings->LkCustomerProCmsNotify_ID;
+            $fields['LkCustomerProCmsNotActivated_ID'] = $this->LkCustomerProSettings->LkCustomerProCmsNotActivated_ID;
+            $fields['LkCustomerProEnableValidAccount'] = $this->LkCustomerProSettings->LkCustomerProEnableValidAccount;
+            $fields['LkCustomerProGroup_ID'] = $this->LkCustomerProSettings->LkCustomerProGroup_ID;
         }
         return $fields;
     }
@@ -371,14 +371,14 @@ class Lk_CustomerPro extends Module
 
         //Check if siret is valid
         if ($siret && Validate::isSiret($siret)) {
-            array_push($groupsToAdd, 3, $this->LkCustomerProSettings['LkCustomerProGroup_ID']);
+            array_push($groupsToAdd, 3, $this->LkCustomerProSettings->LkCustomerProGroup_ID);
             $customer->cleanGroups();
             $customer->addGroups($groupsToAdd);
-            $customer->id_default_group = $this->LkCustomerProSettings['LkCustomerProGroup_ID'];
+            $customer->id_default_group = $this->LkCustomerProSettings->LkCustomerProGroup_ID;
             $customer->save();
 
             // Check if manually validate account is enable
-            if ($this->LkCustomerProSettings['LkCustomerProEnableValidAccount']) {
+            if ($this->LkCustomerProSettings->LkCustomerProEnableValidAccount) {
                 // Send mail
                 $CustId = $params['newCustomer']->id;
                 $CustEmail = $params['newCustomer']->email;
@@ -389,11 +389,10 @@ class Lk_CustomerPro extends Module
                 if ($this->addNewInvitation($CustId, $CustEmail)) {
                     $this->sendAccountCreateMail($params, $email);
                     $this->context->controller->success[] = $this->l('Registration successfully. Your account need to be activated. You will receive a confirmation soon');
-                    $link = new Link();
                     $params['newCustomer']->logout();
                     /* On le redirige sur la page CMS de notification */
-                    Tools::Redirect($link->getCMSLink(
-                        (int)$this->LkCustomerProSettings['LkCustomerProCmsNotify_ID'],
+                    Tools::Redirect($this->context->link->getCMSLink(
+                        (int)$this->LkCustomerProSettings->LkCustomerProCmsNotify_ID,
                         null,
                         null,
                         (int)$id_lang
@@ -488,9 +487,8 @@ class Lk_CustomerPro extends Module
      */
     public function hookActionAuthentication()
     {
-        if ($this->LkCustomerProSettings['LkCustomerProEnableValidAccount']) {
+        if ($this->LkCustomerProSettings->LkCustomerProEnableValidAccount) {
             if ((int)$this->context->cookie->id_customer != '') {
-                $id_lang = (int)$this->context->language->id;
                 $sql = 'SELECT a.active AS `active` FROM `' . _DB_PREFIX_ . 'lk_customer` a WHERE a.`id_customer` = '
                     . (int)$this->context->cookie->id_customer;
                 $result = Db::getInstance()->getValue($sql);
@@ -498,15 +496,12 @@ class Lk_CustomerPro extends Module
                     /* Logout customer */
                     $this->context->cookie->logout();
                     /* Redirect to notification page */
-                    $link = new Link();
-                    $link->getCMSLink((int)$this->LkCustomerProSettings['LkCustomerProCmsNotActivated_ID']);
-
-                    Tools::Redirect($link->getCMSLink(
-                        (int)$this->LkCustomerProSettings['LkCustomerProCmsNotActivated_ID'],
-                        null,
-                        null,
-                        (int)$id_lang
-                    )
+                    Tools::Redirect($this->context->link->getCMSLink(
+                            (int)$this->LkCustomerProSettings->LkCustomerProCmsNotActivated_ID,
+                            null,
+                            null,
+                            (int)$this->context->language->id
+                        )
                     );
                 }
             }
@@ -519,7 +514,7 @@ class Lk_CustomerPro extends Module
      */
     public function hookActionFrontControllerSetVariables()
     {
-        $is_pro = $this->context->customer->id_default_group == $this->LkCustomerProSettings['LkCustomerProGroup_ID'];
+        $is_pro = $this->context->customer->id_default_group == $this->LkCustomerProSettings->LkCustomerProGroup_ID;
         $this->context->smarty->assign(array('isprocustomer' => $is_pro));
     }
 
