@@ -68,8 +68,7 @@ class Lk_CustomerPro extends Module
             $this->installCmsPage() &&
             $this->installGroup() &&
             $this->installFixtures() &&
-            $this->installTabs() &&
-            $this->disableDevice(Context::DEVICE_MOBILE);
+            $this->installTabs();
     }
 
     /**
